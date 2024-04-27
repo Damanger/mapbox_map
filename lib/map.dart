@@ -68,7 +68,6 @@ class _MapScreenState extends State<MapScreen> {
   List<String> layerUrlTemplates = [
     "https://api.mapbox.com/styles/v1/damanger/clvib0pl6062501pkd0kw6syr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
     "https://api.mapbox.com/styles/v1/damanger/clvi9eotv05zt01nu5odv3dxn/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
-    "https://api.mapbox.com/styles/v1/damanger/clvi9dqwl030k01qlf9urdfbb/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
   ];
 
   List<Marker> markers = []; // List to store markers
