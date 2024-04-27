@@ -26,18 +26,14 @@ class DraggableMarker extends StatelessWidget {
     return Draggable(
       feedback: IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.location_on),
-        color: Colors.black,
-        iconSize: 45,
+        icon: const Icon(Icons.location_on), color: Colors.black, iconSize: 45,
       ),
       onDragEnd: (details) {
         onDragEnd(LatLng(details.offset.dy, details.offset.dx));
       },
       child: IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.location_on),
-        color: Colors.black,
-        iconSize: 45,
+        icon: const Icon(Icons.location_on), color: Colors.black, iconSize: 45,
       ),
     );
   }
@@ -65,6 +61,16 @@ class _MapScreenState extends State<MapScreen> {
     const LatLng(45.1, 24.36667), // Rimnicu Vilcea
   ];
 
+  int layerStateIndex = 0;
+
+  String selectedUrlTemplate = "https://api.mapbox.com/styles/v1/damanger/clvib0pl6062501pkd0kw6syr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ";
+
+  List<String> layerUrlTemplates = [
+    "https://api.mapbox.com/styles/v1/damanger/clvib0pl6062501pkd0kw6syr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
+    "https://api.mapbox.com/styles/v1/damanger/clvi9eotv05zt01nu5odv3dxn/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
+    "https://api.mapbox.com/styles/v1/damanger/clvi9dqwl030k01qlf9urdfbb/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
+  ];
+
   List<Marker> markers = []; // List to store markers
 
   // Variable para almacenar la dirección del dispositivo
@@ -77,11 +83,12 @@ class _MapScreenState extends State<MapScreen> {
   bool showAdditionalButtons = false;
   TextEditingController searchController = TextEditingController();
   LatLng? searchLocation;
-  final MapController mapController = MapController();
+  late MapController mapController;
 
   @override
   void initState() {
     super.initState();
+    mapController = MapController();
     // Iniciar la escucha del sensor de brújula
     FlutterCompass.events?.listen((event) {
       setState(() {
@@ -110,7 +117,7 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       myPoint = LatLng(position.latitude, position.longitude);
     });
-    mapController.move(myPoint!, 10);
+    mapController.move(myPoint!, 10); // Accede a mapController después de inicializarlo
   }
 
   Future<Position> determinePosition() async {
@@ -213,9 +220,7 @@ class _MapScreenState extends State<MapScreen> {
                 showAdditionalButtons = !showAdditionalButtons;
               });
             },
-            child: const Icon(
-              Icons.map,
-              color: Colors.white,
+            child: const Icon(Icons.map, color: Colors.white, size: 35
             ),
           ),
         ],
@@ -238,7 +243,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
           children: [
             TileLayer(
-              urlTemplate: "https://api.mapbox.com/styles/v1/damanger/clvem1yqh023801pe95588eac/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
+              urlTemplate: selectedUrlTemplate,
               additionalOptions: const {
                 'accessToken': 'pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ',
                 'id':'mapbox.mapbox-streets'
@@ -251,10 +256,7 @@ class _MapScreenState extends State<MapScreen> {
                   width: 60,
                   height: 60,
                   alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.person_pin_circle_sharp,
-                    size: 60,
-                    color: Colors.blue,
+                  child: const Icon(Icons.person_pin_circle_sharp, size: 60, color: Colors.blue,
                   ),
                 ),
                 // Add markers for each coordinate in specificLocations
@@ -263,9 +265,7 @@ class _MapScreenState extends State<MapScreen> {
                     point: location,
                     width: 40, // Adjust marker size as needed
                     height: 40,
-                    child: const Icon(
-                      Icons.location_on, // Customize marker icon
-                      color: Colors.red, // Customize marker color
+                    child: const Icon(Icons.location_on, color: Colors.red, // Customize marker color
                     ),
                   ),
               ],
@@ -308,8 +308,8 @@ class _MapScreenState extends State<MapScreen> {
               angle: ((_heading ?? 0.0) * (3.1415 / 180) * -1),
               child: Image.asset(
                 'assets/compass.png', // Ruta de tu ícono personalizado
-                width: 60,
-                height: 60,
+                width: 100,
+                height: 100,
               ),
             ),
           ),
@@ -347,7 +347,7 @@ class _MapScreenState extends State<MapScreen> {
                       },
                     );
                   },
-                  child: const Icon(Icons.search, color: Colors.white,),
+                  child: const Icon(Icons.search, color: Colors.white, size: 35),
                 ),
                 const SizedBox(height: 16),
                 FloatingActionButton(
@@ -355,13 +355,33 @@ class _MapScreenState extends State<MapScreen> {
                   onPressed: () {
                     determineAndSetPosition();
                   },
-                  child: const Icon(Icons.location_pin,color: Colors.white,),
+                  child: const Icon(Icons.my_location, color: Colors.white, size: 35),
+                ),
+                const SizedBox(height: 16),
+                FloatingActionButton(
+                    backgroundColor: Colors.orange,
+                    onPressed: () {
+                    // Incrementa el índice de estado y asegúrate de que se ajuste dentro de los límites
+                    setState(() {
+                      layerStateIndex = (layerStateIndex + 1) % layerUrlTemplates.length;
+                    });
+                    // Cambia el urlTemplate al valor correspondiente al nuevo estado
+                    changeUrlTemplate(layerUrlTemplates[layerStateIndex]);
+                  },
+                  child: const Icon(Icons.layers, color: Colors.white, size: 35),
                 ),
               ],
             ),
           ),
       ],
     );
+  }
+
+  // Función para cambiar el urlTemplate cuando se presiona el botón "layers"
+  void changeUrlTemplate(String newUrlTemplate) {
+    setState(() {
+      selectedUrlTemplate = newUrlTemplate;
+    });
   }
 
   Future<void> drawRoutes() async {
