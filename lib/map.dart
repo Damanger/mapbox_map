@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,54 +17,151 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
+//clase nodo para la creacion de los nodos del grafo
+class Nodo {
+  final String nombre;
+  final LatLng ubicacion;
+  Nodo? padre;
+  List<Nodo> vecinos;
+
+  Nodo(this.nombre, this.ubicacion, this.vecinos);
+
+  @override
+  String toString() {
+    return 'Nodo(nombre: $nombre, vecinos: ${vecinos.map((n) => n.nombre).join(', ')})';
+  }
+}
+
+//clase grafo para los nodos posibles para la creacion de la ruta
+class Grafo {
+  final List<Nodo> nodos;
+
+  Grafo(this.nodos);
+
+  void agregarNodo(Nodo nodo) {
+    nodos.add(nodo);
+  }
+
+  void agregarArista(Nodo origen, Nodo destino) {
+    origen.vecinos.add(destino);
+    destino.vecinos.add(origen);
+  }
+
+  @override
+  String toString() {
+    return 'Grafo(nodos: ${nodos.join(', ')})';
+  }
+}
+
+List<LatLng> buscarRutaMasCorta(Nodo origen, Nodo destino) {
+  // Lista para almacenar las ciudades visitadas
+  Set<Nodo> visitadas = {};
+
+  // Cola para almacenar las ciudades por explorar
+  Queue<Nodo> cola = Queue<Nodo>();
+
+  // Agregar la ciudad de origen a la cola
+  cola.add(origen);
+
+  while (cola.isNotEmpty) {
+    // Obtener la siguiente ciudad de la cola
+    Nodo actual = cola.removeFirst();
+
+    // Si la ciudad actual es el destino, regresar la ruta
+    if (actual == destino) {
+      return _reconstruirRuta(actual);
+    }
+
+    // Marcar la ciudad actual como visitada
+    visitadas.add(actual);
+
+    // Recorrer los vecinos de la ciudad actual
+    for (Nodo vecino in actual.vecinos) {
+      // Si el vecino no ha sido visitado, agregarlo a la cola
+      if (!visitadas.contains(vecino)) {
+        vecino.padre = actual;
+        cola.add(vecino);
+      }
+    }
+  }
+
+  // Si no se encontró una ruta, regresar una lista vacía
+  return [];
+}
+
+List<LatLng> _reconstruirRuta(Nodo destino) {
+  List<Nodo> ruta = [];
+
+  // Recorrer la ruta desde el destino hasta el origen
+  Nodo? actual = destino;
+  while (actual != null) {
+    ruta.add(actual);
+    actual = actual.padre;
+  }
+
+  // Invertir la ruta para que el origen esté al principio
+  ruta.reversed;
+  //solo regresar las coordenadas geograficas
+  List<LatLng> points = ruta.map((n) => n.ubicacion).toList();
+  return points;
+}
+
 class DraggableMarker extends StatelessWidget {
   final LatLng point;
   final Function(LatLng) onDragEnd;
-  const DraggableMarker({super.key, required this.point, required this.onDragEnd});
+  const DraggableMarker(
+      {super.key, required this.point, required this.onDragEnd});
 
   @override
   Widget build(BuildContext context) {
     return Draggable(
       feedback: IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.location_on), color: Colors.black, iconSize: 45,
+        icon: const Icon(Icons.location_on),
+        color: Colors.black,
+        iconSize: 45,
       ),
       onDragEnd: (details) {
         onDragEnd(LatLng(details.offset.dy, details.offset.dx));
       },
       child: IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.location_on), color: Colors.black, iconSize: 45,
+        icon: const Icon(Icons.location_on),
+        color: Colors.black,
+        iconSize: 45,
       ),
     );
   }
 }
 
+//funcion para calcular la distancia entre dos puntos
+double calculateDistance(LatLng point1, LatLng point2) {
+  final Distance distance = Distance();
+  return distance(point1, point2);
+}
+
+//funcion para obtener las ciudades cercanas a un radio de distancia
+List<LatLng> getNearbyCities(LatLng mainCity, LatLng finalCity, double radius) {
+  List<LatLng> nearbyCities = [];
+
+  if (calculateDistance(mainCity, finalCity) <= radius) {
+    nearbyCities.add(finalCity);
+  }
+
+  //imprimir en consola el arreglo
+  print(nearbyCities);
+
+  return nearbyCities;
+}
+
 class _MapScreenState extends State<MapScreen> {
-
-  // Coordenadas de las ciudades de Rumania
-  List<LatLng> specificLocations = [
-    const LatLng(46.18333, 21.31667), // Arad
-    const LatLng(46.62251, 21.51741), // Zerind
-    const LatLng(47.0458, 21.91833), // Oradea
-    const LatLng(45.8, 24.15), // Sibiu
-    const LatLng(45.85, 24.96667), // Fagaras
-    const LatLng(44.43225, 26.10626), // Bucharest
-    const LatLng(44.85, 24.86667), // Pitesti
-    const LatLng(45.1, 24.36667), // Rimnicu Vilcea
-    const LatLng(45.8, 24.15), // Sibiu
-    const LatLng(46.18333, 21.31667), // Arad
-    const LatLng(45.75372, 21.22571), // Timisoara
-    const LatLng(45.68886, 21.90306), // Lugoj
-    const LatLng(44.90411, 22.36451), // Mehadia
-    const LatLng(44.62693, 22.65288), // Dobreta
-    const LatLng(44.31667, 23.8), // Craiova
-    const LatLng(45.1, 24.36667), // Rimnicu Vilcea
-  ];
-
   int layerStateIndex = 0;
 
-  String selectedUrlTemplate = "https://api.mapbox.com/styles/v1/damanger/clvib0pl6062501pkd0kw6syr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ";
+     List<LatLng> specificLocations = [];
+
+
+  String selectedUrlTemplate =
+      "https://api.mapbox.com/styles/v1/damanger/clvib0pl6062501pkd0kw6syr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ";
 
   List<String> layerUrlTemplates = [
     "https://api.mapbox.com/styles/v1/damanger/clvib0pl6062501pkd0kw6syr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ",
@@ -84,6 +182,10 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? searchLocation;
   late MapController mapController;
 
+  //completar el grafo con los vecinos de cada nodo :
+
+  // Crear las ciudades y sus vecinos
+
   @override
   void initState() {
     super.initState();
@@ -94,10 +196,74 @@ class _MapScreenState extends State<MapScreen> {
         _heading = event.heading ?? 0.0;
       });
     });
-    drawRoutes();
-    drawRouteBetweenCraiovaAndPitesti();
+
+    // Crear nodos
+    Nodo arad = Nodo('Arad', const LatLng(46.18333, 21.31667), []);
+    Nodo zerind = Nodo('Zerind', const LatLng(46.62251, 21.51741), []);
+    Nodo oradea = Nodo('Oradea', const LatLng(47.0458, 21.91833), []);
+    Nodo sibiu = Nodo('Sibiu', const LatLng(45.8, 24.15), []);
+    Nodo fagaras = Nodo('Fagaras', const LatLng(45.85, 24.96667), []);
+    Nodo bucharest = Nodo('Bucharest', const LatLng(44.43225, 26.10626), []);
+    Nodo pitesti = Nodo('Pitesti', const LatLng(44.85, 24.86667), []);
+    Nodo rimnicuVilcea =
+        Nodo('Rimnicu Vilcea', const LatLng(45.1, 24.36667), []);
+    Nodo timisoara = Nodo('Timisoara', const LatLng(45.75372, 21.22571), []);
+    Nodo craiova = Nodo('Craiova', const LatLng(44.31667, 23.8), []);
+
+// Crear grafo
+    Grafo? grafo;
+
+// Agregar nodos al grafo
+    grafo = Grafo([
+      arad,
+      zerind,
+      oradea,
+      sibiu,
+      fagaras,
+      bucharest,
+      pitesti,
+      rimnicuVilcea,
+      timisoara,
+      craiova,
+    ]);
+
+    // Agregar aristas
+    grafo.agregarArista(arad, zerind);
+    grafo.agregarArista(arad, sibiu);
+    grafo.agregarArista(arad, timisoara);
+    grafo.agregarArista(zerind, arad);
+    grafo.agregarArista(zerind, oradea);
+    grafo.agregarArista(zerind, sibiu);
+    grafo.agregarArista(oradea, zerind);
+    grafo.agregarArista(oradea, sibiu);
+    grafo.agregarArista(sibiu, arad);
+    grafo.agregarArista(sibiu, zerind);
+    grafo.agregarArista(sibiu, oradea);
+    grafo.agregarArista(sibiu, fagaras);
+    grafo.agregarArista(sibiu, rimnicuVilcea);
+    grafo.agregarArista(fagaras, sibiu);
+    grafo.agregarArista(fagaras, bucharest);
+    grafo.agregarArista(bucharest, fagaras);
+    grafo.agregarArista(bucharest, pitesti);
+    grafo.agregarArista(bucharest, craiova);
+    grafo.agregarArista(pitesti, bucharest);
+    grafo.agregarArista(pitesti, rimnicuVilcea);
+    grafo.agregarArista(rimnicuVilcea, sibiu);
+    grafo.agregarArista(rimnicuVilcea, pitesti);
+    grafo.agregarArista(rimnicuVilcea, craiova);
+    grafo.agregarArista(timisoara, arad);
+    grafo.agregarArista(craiova, bucharest);
+    grafo.agregarArista(craiova, rimnicuVilcea);
+
+// Buscar la ruta más corta entre Arad y Bucharest
+    List<LatLng> specificLocations = buscarRutaMasCorta(arad, bucharest);
+
+    if (specificLocations.isNotEmpty) {
+      drawRoutes(specificLocations);
+    }
   }
 
+//_--------------------
   // Función para ajustar la rotación del mapa a 0°
   void _adjustMapRotation() {
     mapController.rotate(0.0);
@@ -116,7 +282,8 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       myPoint = LatLng(position.latitude, position.longitude);
     });
-    mapController.move(myPoint!, 10); // Accede a mapController después de inicializarlo
+    mapController.move(
+        myPoint!, 10); // Accede a mapController después de inicializarlo
   }
 
   Future<Position> determinePosition() async {
@@ -135,7 +302,7 @@ class _MapScreenState extends State<MapScreen> {
     List<Location> locations = await locationFromAddress(query);
     if (locations.isNotEmpty) {
       final LatLng newLocation =
-      LatLng(locations[0].latitude, locations[0].longitude);
+          LatLng(locations[0].latitude, locations[0].longitude);
       setState(() {
         searchLocation = newLocation;
       });
@@ -146,8 +313,8 @@ class _MapScreenState extends State<MapScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Error'),
-            content: const Text(
-                'No se encontró ningún lugar con esta búsqueda.'),
+            content:
+                const Text('No se encontró ningún lugar con esta búsqueda.'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -175,16 +342,15 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     final List<ORSCoordinate> routeCoordinates =
-    await client.directionsRouteCoordsGet(
+        await client.directionsRouteCoordsGet(
       startCoordinate:
-      ORSCoordinate(latitude: lat1.latitude, longitude: lat1.longitude),
+          ORSCoordinate(latitude: lat1.latitude, longitude: lat1.longitude),
       endCoordinate:
-      ORSCoordinate(latitude: lat2.latitude, longitude: lat2.longitude),
+          ORSCoordinate(latitude: lat2.latitude, longitude: lat2.longitude),
     );
 
     final List<LatLng> routePoints = routeCoordinates
-        .map((coordinate) =>
-        LatLng(coordinate.latitude, coordinate.longitude))
+        .map((coordinate) => LatLng(coordinate.latitude, coordinate.longitude))
         .toList();
 
     setState(() {
@@ -200,14 +366,13 @@ class _MapScreenState extends State<MapScreen> {
       body: Center(
         child: myPoint == null
             ? ElevatedButton(
-          onPressed: () {
-            determineAndSetPosition();
-          },
-          child: const Text('Activar localización'),
-        )
+                onPressed: () {
+                  determineAndSetPosition();
+                },
+                child: const Text('Activar localización'),
+              )
             : contenidodelmapa(),
       ),
-
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -219,8 +384,7 @@ class _MapScreenState extends State<MapScreen> {
                 showAdditionalButtons = !showAdditionalButtons;
               });
             },
-            child: const Icon(Icons.map, color: Colors.white, size: 35
-            ),
+            child: const Icon(Icons.map, color: Colors.white, size: 35),
           ),
         ],
       ),
@@ -244,8 +408,9 @@ class _MapScreenState extends State<MapScreen> {
             TileLayer(
               urlTemplate: selectedUrlTemplate,
               additionalOptions: const {
-                'accessToken': 'pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ',
-                'id':'mapbox.mapbox-streets'
+                'accessToken':
+                    'pk.eyJ1IjoiZGFtYW5nZXIiLCJhIjoiY2x2ZWhxeHlvMGEwZjJrdDdrY2Vyd3FiYSJ9.guWHApecB_bW-R9gepkWuQ',
+                'id': 'mapbox.mapbox-streets'
               },
             ),
             MarkerLayer(
@@ -255,16 +420,24 @@ class _MapScreenState extends State<MapScreen> {
                   width: 60,
                   height: 60,
                   alignment: Alignment.center,
-                  child: const Icon(Icons.person_pin_circle_sharp, size: 60, color: Colors.blue,
+                  child: const Icon(
+                    Icons.person_pin_circle_sharp,
+                    size: 60,
+                    color: Colors.blue,
                   ),
                 ),
                 // Add markers for each coordinate in specificLocations
-                for (final location in specificLocations)
+
+                for (LatLng point in specificLocations)
                   Marker(
-                    point: location,
-                    width: 40, // Adjust marker size as needed
-                    height: 40,
-                    child: const Icon(Icons.location_on, color: Colors.red, // Customize marker color
+                    point: point,
+                    width: 60,
+                    height: 60,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.location_on,
+                      size: 60,
+                      color: Colors.red,
                     ),
                   ),
               ],
@@ -346,7 +519,8 @@ class _MapScreenState extends State<MapScreen> {
                       },
                     );
                   },
-                  child: const Icon(Icons.search, color: Colors.white, size: 35),
+                  child:
+                      const Icon(Icons.search, color: Colors.white, size: 35),
                 ),
                 const SizedBox(height: 16),
                 FloatingActionButton(
@@ -354,20 +528,23 @@ class _MapScreenState extends State<MapScreen> {
                   onPressed: () {
                     determineAndSetPosition();
                   },
-                  child: const Icon(Icons.my_location, color: Colors.white, size: 35),
+                  child: const Icon(Icons.my_location,
+                      color: Colors.white, size: 35),
                 ),
                 const SizedBox(height: 16),
                 FloatingActionButton(
-                    backgroundColor: Colors.orange,
-                    onPressed: () {
+                  backgroundColor: Colors.orange,
+                  onPressed: () {
                     // Incrementa el índice de estado y asegúrate de que se ajuste dentro de los límites
                     setState(() {
-                      layerStateIndex = (layerStateIndex + 1) % layerUrlTemplates.length;
+                      layerStateIndex =
+                          (layerStateIndex + 1) % layerUrlTemplates.length;
                     });
                     // Cambia el urlTemplate al valor correspondiente al nuevo estado
                     changeUrlTemplate(layerUrlTemplates[layerStateIndex]);
                   },
-                  child: const Icon(Icons.layers, color: Colors.white, size: 35),
+                  child:
+                      const Icon(Icons.layers, color: Colors.white, size: 35),
                 ),
               ],
             ),
@@ -383,19 +560,19 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  Future<void> drawRoutes() async {
+  Future<void> drawRoutes(List<LatLng> specificLocations) async {
     for (int i = 0; i < specificLocations.length - 1; i++) {
-      List<LatLng> route = await getCoordinates(
-          specificLocations[i], specificLocations[i + 1]);
+      List<LatLng> route =
+          await getCoordinates(specificLocations[i], specificLocations[i + 1]);
       points.addAll(route);
     }
   }
 
   void drawRouteBetweenCraiovaAndPitesti() {
-    final LatLng craiova = specificLocations[14]; // Craiova
-    final LatLng pitesti = specificLocations[6]; // Pitesti
+    // final LatLng craiova = specificLocations[14]; // Craiova
+    // final LatLng pitesti = specificLocations[6]; // Pitesti
 
     // Obtener los puntos de la ruta entre Arad y Zerind
-    getCoordinates(craiova, pitesti);
+    // getCoordinates(craiova, pitesti);
   }
 }
