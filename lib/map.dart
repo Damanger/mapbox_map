@@ -134,25 +134,6 @@ class DraggableMarker extends StatelessWidget {
   }
 }
 
-//funcion para calcular la distancia entre dos puntos
-double calculateDistance(LatLng point1, LatLng point2) {
-  final Distance distance = Distance();
-  return distance(point1, point2);
-}
-
-//funcion para obtener las ciudades cercanas a un radio de distancia
-List<LatLng> getNearbyCities(LatLng mainCity, LatLng finalCity, double radius) {
-  List<LatLng> nearbyCities = [];
-
-  if (calculateDistance(mainCity, finalCity) <= radius) {
-    nearbyCities.add(finalCity);
-  }
-
-  //imprimir en consola el arreglo
-  print(nearbyCities);
-
-  return nearbyCities;
-}
 
 class _MapScreenState extends State<MapScreen> {
   int layerStateIndex = 0;
@@ -256,14 +237,16 @@ class _MapScreenState extends State<MapScreen> {
     grafo.agregarArista(craiova, rimnicuVilcea);
 
 // Buscar la ruta más corta entre Arad y Bucharest
-    List<LatLng> specificLocations = buscarRutaMasCorta(arad, bucharest);
+     specificLocations = buscarRutaMasCorta(arad, bucharest);
 
     if (specificLocations.isNotEmpty) {
       drawRoutes(specificLocations);
+      //dibujar las marcas de la ruta 
+      
     }
   }
 
-//_--------------------
+
   // Función para ajustar la rotación del mapa a 0°
   void _adjustMapRotation() {
     mapController.rotate(0.0);
@@ -427,19 +410,15 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
                 // Add markers for each coordinate in specificLocations
-
-                for (LatLng point in specificLocations)
+                  for (var point in specificLocations)
                   Marker(
                     point: point,
-                    width: 60,
-                    height: 60,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.location_on,
-                      size: 60,
-                      color: Colors.red,
+                    width: 40,
+                    height: 40,
+                     child: const Icon(Icons.location_on, color: Colors.red, // Customize marker color
                     ),
                   ),
+        
               ],
             ),
             PolylineLayer(
@@ -568,11 +547,5 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  void drawRouteBetweenCraiovaAndPitesti() {
-    // final LatLng craiova = specificLocations[14]; // Craiova
-    // final LatLng pitesti = specificLocations[6]; // Pitesti
 
-    // Obtener los puntos de la ruta entre Arad y Zerind
-    // getCoordinates(craiova, pitesti);
-  }
 }
